@@ -1,0 +1,4 @@
+score_threshold: 0.35   # higher threshold for clean visual output
+nms_iou_threshold: 0.45
+output_dir: artifacts/predictions
+default_model: yolo_style
