@@ -1,0 +1,40 @@
+# Dataset: "Hard Hat Workers" (Roboflow Universe, joseph-nelson)
+# https://universe.roboflow.com/joseph-nelson/hard-hat-workers
+#
+# Why this dataset:
+#   - ~7,035 images -> sits right at the top of the "medium" 2k-7k target range
+#     (we optionally subsample via `max_images` below to land comfortably inside it).
+#   - 3 classes only (helmet, head, person) -> easy to compare model families fairly,
+#     no long-tail class imbalance headaches.
+#   - Real-world workplace-safety use case with dense, varied bounding boxes
+#     (small helmets/heads + larger person boxes) -> good stress test for both
+#     single-stage (YOLO-style/RetinaNet) and two-stage (Faster R-CNN) detectors.
+#   - Distributed natively in YOLOv8 txt format -> zero reformatting needed.
+#   - License: CC BY 4.0, freely redistributable for this kind of project.
+dataset_name: hard_hat_workers
+
+roboflow:
+  workspace: joseph-nelson
+  project: hard-hat-workers
+  version: 2
+  format: yolov8
+
+# Optional cap applied by scripts/download_dataset.py after export, so the
+# final dataset always lands inside the 2,000-7,000 image target even if the
+# upstream Roboflow version grows. Set to null to keep everything.
+max_images: 7000
+
+raw_dir: data/raw
+processed_dir: data/processed
+
+class_names: ["helmet", "head", "person"]
+num_classes: 3
+
+img_size: 640
+batch_size: 8
+num_workers: 2
+
+# Roboflow already ships a train/valid/test split; these ratios are only used
+# as a fallback if a fresh split needs to be carved out of a flat image pool.
+val_split: 0.15
+test_split: 0.10
