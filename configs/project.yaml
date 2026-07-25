@@ -1,0 +1,6 @@
+project_name: object_detection_suite
+seed: 42
+device: auto   # auto | cuda | cpu | mps
+artifacts_dir: artifacts
+checkpoints_dir: artifacts/checkpoints
+logs_dir: logs
