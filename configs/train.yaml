@@ -1,0 +1,43 @@
+# Per-model training hyperparameters. `models_to_train` controls what
+# `scripts/train_all.py` and `main.py train` iterate over; you can train a
+# single model by passing --model on the CLI without touching this file.
+models_to_train:
+  - yolo_style
+  - faster_rcnn
+  - retinanet
+
+checkpoints_dir: artifacts/checkpoints
+log_every_n_steps: 20
+use_mlflow: false
+mlflow_experiment_name: object_detection_suite
+
+model_specs:
+  yolo_style:
+    epochs: 40
+    learning_rate: 0.001
+    weight_decay: 0.0005
+    optimizer: adamw
+    scheduler: cosine
+    freeze_backbone_epochs: 3
+    use_amp: true
+    early_stopping_patience: 8
+
+  faster_rcnn:
+    epochs: 20
+    learning_rate: 0.0005
+    weight_decay: 0.0001
+    optimizer: sgd
+    scheduler: step
+    freeze_backbone_epochs: 2
+    use_amp: true
+    early_stopping_patience: 6
+
+  retinanet:
+    epochs: 20
+    learning_rate: 0.0005
+    weight_decay: 0.0001
+    optimizer: sgd
+    scheduler: step
+    freeze_backbone_epochs: 2
+    use_amp: true
+    early_stopping_patience: 6
