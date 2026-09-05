@@ -31,14 +31,35 @@ logger = logging.getLogger(__name__)
 
 
 def _load_api_key() -> str:
+    """Loads ROBOFLOW_API_KEY from the environment or a `.env` file.
+
+    Uses python-dotenv if available; otherwise falls back to a minimal parser
+    that handles quoted values, `export` prefixes, inline comments, and blanks.
+    """
     import os
 
     env_file = Path(".env")
     if env_file.exists():
-        for line in env_file.read_text().splitlines():
-            if line.strip().startswith("ROBOFLOW_API_KEY"):
-                _, _, value = line.partition("=")
-                os.environ.setdefault("ROBOFLOW_API_KEY", value.strip())
+        try:
+            from dotenv import load_dotenv
+
+            load_dotenv(dotenv_path=env_file, override=False)
+        except ImportError:
+            # Minimal, tolerant parser for projects without python-dotenv.
+            for line in env_file.read_text().splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("export "):
+                    line = line[len("export "):].strip()
+                if "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key, value = key.strip(), value.strip()
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                    value = value[1:-1]
+                if key == "ROBOFLOW_API_KEY":
+                    os.environ.setdefault("ROBOFLOW_API_KEY", value)
 
     api_key = os.environ.get("ROBOFLOW_API_KEY")
     if not api_key:
