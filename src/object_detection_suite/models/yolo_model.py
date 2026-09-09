@@ -103,7 +103,7 @@ class YoloStyleDetector(BaseDetector):
     def _decode(self, preds: torch.Tensor) -> list[dict]:
         device = preds.device
         B, S, _, A, _ = preds.shape
-        anchors = torch.tensor(self.anchors, device=device)  # [A, 2]
+        anchors = torch.tensor(self.anchors, device=device) * self.stride # [A, 2]
 
         grid_y, grid_x = torch.meshgrid(
             torch.arange(S, device=device), torch.arange(S, device=device), indexing="ij"
@@ -118,10 +118,10 @@ class YoloStyleDetector(BaseDetector):
             p = preds[b]  # [S, S, A, 5+C]
             cx = (torch.sigmoid(p[..., 0]) + grid_x) * self.stride
             cy = (torch.sigmoid(p[..., 1]) + grid_y) * self.stride
-            w = torch.exp(p[..., 2].clamp(max=10)) * anchor_w * self.stride
-            h = torch.exp(p[..., 3].clamp(max=10)) * anchor_h * self.stride
+            w = torch.exp(p[..., 2].clamp(min=-10, max=10)) * anchor_w
+            h = torch.exp(p[..., 3].clamp(min=-10, max=10)) * anchor_h
             obj = torch.sigmoid(p[..., 4])
-            cls_probs = torch.softmax(p[..., 5:], dim=-1)
+            cls_probs = torch.sigmoid(p[..., 5:])
             cls_scores, cls_idx = cls_probs.max(dim=-1)
             scores = obj * cls_scores
 
