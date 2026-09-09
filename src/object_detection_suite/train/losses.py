@@ -114,27 +114,26 @@ class YoloLoss(nn.Module):
         pred_obj = preds[..., 4]
         pred_cls = preds[..., 5:]
 
-        n_pos = obj_mask.sum().clamp(min=1)
-
-        loss_box = (
-            F.mse_loss(torch.sigmoid(pred_tx)[obj_mask], t["tx"][obj_mask], reduction="sum")
-            + F.mse_loss(torch.sigmoid(pred_ty)[obj_mask], t["ty"][obj_mask], reduction="sum")
-            + F.mse_loss(pred_tw[obj_mask], t["tw"][obj_mask], reduction="sum")
-            + F.mse_loss(pred_th[obj_mask], t["th"][obj_mask], reduction="sum")
-        ) / n_pos
-
-        loss_obj = F.binary_cross_entropy_with_logits(
-            pred_obj[obj_mask], torch.ones_like(pred_obj[obj_mask])
-        ) if obj_mask.any() else torch.tensor(0.0, device=device)
-
-        loss_noobj = F.binary_cross_entropy_with_logits(
-            pred_obj[noobj_mask], torch.zeros_like(pred_obj[noobj_mask])
-        ) if noobj_mask.any() else torch.tensor(0.0, device=device)
-
+        # 1. Standardized coordinate calculations using element mean reduction
         if obj_mask.any():
-            loss_cls = F.cross_entropy(pred_cls[obj_mask], t["tcls"][obj_mask])
+            loss_box = (
+                F.mse_loss(torch.sigmoid(pred_tx)[obj_mask], t["tx"][obj_mask], reduction="mean")
+                + F.mse_loss(torch.sigmoid(pred_ty)[obj_mask], t["ty"][obj_mask], reduction="mean")
+                + F.mse_loss(pred_tw[obj_mask], t["tw"][obj_mask], reduction="mean")
+                + F.mse_loss(pred_th[obj_mask], t["th"][obj_mask], reduction="mean")
+            )
+            loss_obj = F.binary_cross_entropy_with_logits(pred_obj[obj_mask], torch.ones_like(pred_obj[obj_mask]), reduction="mean")
+            loss_cls = F.cross_entropy(pred_cls[obj_mask], t["tcls"][obj_mask], reduction="mean")
         else:
+            loss_box = torch.tensor(0.0, device=device)
+            loss_obj = torch.tensor(0.0, device=device)
             loss_cls = torch.tensor(0.0, device=device)
+
+        # 2. Separate background tracking to safely manage sparse scenes
+        if noobj_mask.any():
+            loss_noobj = F.binary_cross_entropy_with_logits(pred_obj[noobj_mask], torch.zeros_like(pred_obj[noobj_mask]), reduction="mean")
+        else:
+            loss_noobj = torch.tensor(0.0, device=device)
 
         total = (
             self.lambda_coord * loss_box
